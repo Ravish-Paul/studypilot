@@ -91,14 +91,9 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
             subtitle: 'Every skipped day gets rebuilt smartly',
           ),
           const _Benefit(
-            icon: Icons.insights,
-            title: 'Weekly insights',
-            subtitle: 'See where your focus actually goes',
-          ),
-          const _Benefit(
-            icon: Icons.palette,
-            title: 'Premium themes',
-            subtitle: 'Make StudyPilot yours',
+            icon: Icons.favorite,
+            title: 'Support a student developer',
+            subtitle: 'Pro keeps StudyPilot independent and ad-free',
           ),
           const SizedBox(height: 24),
           if (paywall.loadingPackages)
