@@ -100,6 +100,7 @@ class PaywallController extends ChangeNotifier {
   }
 
   Future<void> loadPackages() async {
+    if (loadingPackages) return;
     loadingPackages = true;
     message = null;
     _safeNotify();

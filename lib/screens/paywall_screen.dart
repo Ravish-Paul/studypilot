@@ -14,19 +14,15 @@ class PaywallScreen extends ConsumerStatefulWidget {
 
 class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   bool _nativeAttempted = false;
+  bool _presenting = false;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _tryNativePaywall());
-  }
-
-  Future<void> _tryNativePaywall() async {
-    if (_nativeAttempted) return;
-    final paywall = ref.read(paywallControllerProvider);
-    if (paywall.demoMode) return;
+  Future<void> _presentNativePaywall() async {
+    if (_nativeAttempted || _presenting) return;
     _nativeAttempted = true;
+    _presenting = true;
+    final paywall = ref.read(paywallControllerProvider);
     final success = await paywall.presentNativePaywall();
+    _presenting = false;
     if (!mounted) return;
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -39,6 +35,15 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
   @override
   Widget build(BuildContext context) {
     final paywall = ref.watch(paywallControllerProvider);
+
+    if (!_nativeAttempted &&
+        !paywall.demoMode &&
+        !paywall.loadingPackages &&
+        paywall.packages.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _presentNativePaywall(),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(

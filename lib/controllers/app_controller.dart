@@ -221,6 +221,7 @@ class AppController extends ChangeNotifier {
   }
 
   Future<void> setPro(bool value) async {
+    if (state.isPro == value) return;
     state.isPro = value;
     await repository.saveState(state);
     notifyListeners();
