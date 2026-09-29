@@ -13,6 +13,29 @@ class PaywallScreen extends ConsumerStatefulWidget {
 }
 
 class _PaywallScreenState extends ConsumerState<PaywallScreen> {
+  bool _nativeAttempted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _tryNativePaywall());
+  }
+
+  Future<void> _tryNativePaywall() async {
+    if (_nativeAttempted) return;
+    final paywall = ref.read(paywallControllerProvider);
+    if (paywall.demoMode) return;
+    _nativeAttempted = true;
+    final success = await paywall.presentNativePaywall();
+    if (!mounted) return;
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pro unlocked. Thank you!')),
+      );
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final paywall = ref.watch(paywallControllerProvider);
@@ -116,7 +139,31 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
             ],
             if (paywall.monthlyPackage == null &&
                 paywall.lifetimePackage == null)
-              const Center(child: Text('No packages available right now')),
+              Column(
+                children: [
+                  _PackageCard(
+                    title: 'Pro Monthly',
+                    price: '\$3.99 / month',
+                    highlighted: false,
+                    onTap: () => _demoUnlock(paywall),
+                  ),
+                  const SizedBox(height: 12),
+                  _PackageCard(
+                    title: 'Pro Lifetime',
+                    price: '\$24.99 once',
+                    highlighted: true,
+                    onTap: () => _demoUnlock(paywall),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Products are not configured in the RevenueCat '
+                    'dashboard yet, so purchases run in test mode — '
+                    'unlocks Pro locally for evaluation.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
           ],
           if (paywall.message != null)
             Padding(

@@ -24,7 +24,6 @@ final appControllerProvider = ChangeNotifierProvider<AppController>((ref) {
     repository: ref.watch(repositoryProvider),
     aiService: ref.watch(aiServiceProvider),
   );
-  ref.onDispose(controller.dispose);
   return controller;
 });
 
@@ -36,6 +35,5 @@ final paywallControllerProvider = ChangeNotifierProvider<PaywallController>((
     appController: ref.watch(appControllerProvider),
   );
   controller.init();
-  ref.onDispose(controller.dispose);
   return controller;
 });

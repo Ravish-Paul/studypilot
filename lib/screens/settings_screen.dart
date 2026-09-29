@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../controllers/app_controller.dart';
+import '../controllers/paywall_controller.dart';
 import '../providers.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -12,6 +14,7 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final app = ref.watch(appControllerProvider);
+    final paywall = ref.watch(paywallControllerProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -75,6 +78,8 @@ class SettingsPage extends ConsumerWidget {
                   'and unlimited offline planning',
             ),
           const _SectionHeader('Account'),
+          if (paywall.isPro && paywall.customerInfo != null)
+            _entitlementTile(paywall),
           ListTile(
             leading: const Icon(Icons.shopping_bag),
             title: const Text('Purchases'),
@@ -82,6 +87,16 @@ class SettingsPage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).pushNamed('/paywall'),
           ),
+          if (paywall.revenueCat.isConfigured)
+            ListTile(
+              leading: const Icon(Icons.settings_suggest),
+              title: const Text('Manage subscription'),
+              subtitle: const Text(
+                'Customer Center — plans, restore and cancellations',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _openCustomerCenter(context, ref),
+            ),
           ListTile(
             leading: const Icon(Icons.delete_outline),
             title: const Text('Reset app data'),
@@ -99,6 +114,35 @@ class SettingsPage extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Widget _entitlementTile(PaywallController paywall) {
+    final entitlement = paywall.revenueCat.proEntitlement(
+      paywall.customerInfo!,
+    );
+    if (entitlement == null) return const SizedBox.shrink();
+    final expires = entitlement.expirationDate;
+    final subtitle = expires == null
+        ? 'Lifetime access · ${entitlement.productIdentifier}'
+        : '${entitlement.willRenew ? 'Renews' : 'Expires'} '
+              '${_dateFormatter.format(DateTime.parse(expires).toLocal())}';
+    return _InfoTile(
+      icon: Icons.workspace_premium,
+      title: 'Pro active',
+      subtitle: subtitle,
+    );
+  }
+
+  static final _dateFormatter = DateFormat.yMMMd();
+
+  Future<void> _openCustomerCenter(BuildContext context, WidgetRef ref) async {
+    final paywall = ref.read(paywallControllerProvider);
+    final opened = await paywall.openCustomerCenter();
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Customer Center is not available yet')),
+      );
+    }
   }
 
   Future<void> _confirmReset(BuildContext context, WidgetRef ref) async {

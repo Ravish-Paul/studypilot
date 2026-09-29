@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:purchases_flutter/purchases_flutter.dart';
+import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
 
 class PurchaseOutcome {
   final bool success;
@@ -85,6 +86,46 @@ class RevenueCatService {
     }
   }
 
+  Future<PaywallResult?> presentNativePaywall() async {
+    if (!configured) return null;
+    try {
+      return await RevenueCatUI.presentPaywallIfNeeded(
+        entitlementId,
+        displayCloseButton: true,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> presentCustomerCenter({
+    void Function(CustomerInfo info)? onRestoreCompleted,
+    void Function(PurchasesError error)? onRestoreFailed,
+  }) async {
+    if (!configured) return false;
+    try {
+      await RevenueCatUI.presentCustomerCenter(
+        onRestoreCompleted: onRestoreCompleted,
+        onRestoreFailed: onRestoreFailed,
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<CustomerInfo?> fetchCustomerInfo() async {
+    if (!configured) return null;
+    try {
+      return await Purchases.getCustomerInfo();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  EntitlementInfo? proEntitlement(CustomerInfo info) =>
+      info.entitlements.active[entitlementId];
+
   Future<bool> checkCurrentAccess() async {
     if (!configured) return false;
     try {
@@ -98,10 +139,22 @@ class RevenueCatService {
   bool hasProAccess(CustomerInfo info) =>
       info.entitlements.active[entitlementId] != null;
 
+  bool hasProAccessOf(CustomerInfo? info) =>
+      info != null && hasProAccess(info);
+
+  void Function(CustomerInfo info)? _customerInfoListener;
+
   void listenForUpdates(void Function(bool isPro) onUpdate) {
     if (!configured) return;
-    Purchases.addCustomerInfoUpdateListener((info) {
-      onUpdate(hasProAccess(info));
-    });
+    stopListening();
+    _customerInfoListener = (info) => onUpdate(hasProAccess(info));
+    Purchases.addCustomerInfoUpdateListener(_customerInfoListener!);
+  }
+
+  void stopListening() {
+    final listener = _customerInfoListener;
+    if (listener == null) return;
+    Purchases.removeCustomerInfoUpdateListener(listener);
+    _customerInfoListener = null;
   }
 }
