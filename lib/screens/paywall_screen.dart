@@ -101,14 +101,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
           else if (paywall.demoMode) ...[
             _PackageCard(
               title: 'Pro Monthly',
-              price: '\$3.99 / month',
+              price: '\$1.99 / month',
               highlighted: false,
               onTap: () => _demoUnlock(paywall),
             ),
             const SizedBox(height: 12),
             _PackageCard(
               title: 'Pro Lifetime',
-              price: '\$24.99 once',
+              price: '\$9.99 once',
               highlighted: true,
               onTap: () => _demoUnlock(paywall),
             ),
@@ -143,14 +143,14 @@ class _PaywallScreenState extends ConsumerState<PaywallScreen> {
                 children: [
                   _PackageCard(
                     title: 'Pro Monthly',
-                    price: '\$3.99 / month',
+                    price: '\$1.99 / month',
                     highlighted: false,
                     onTap: () => _demoUnlock(paywall),
                   ),
                   const SizedBox(height: 12),
                   _PackageCard(
                     title: 'Pro Lifetime',
-                    price: '\$24.99 once',
+                    price: '\$9.99 once',
                     highlighted: true,
                     onTap: () => _demoUnlock(paywall),
                   ),

@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show debugPrint, kDebugMode, kIsWeb;
 import 'package:flutter/services.dart' show PlatformException;
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:purchases_ui_flutter/purchases_ui_flutter.dart';
@@ -21,7 +22,7 @@ class RevenueCatService {
   final String? apiKey;
   bool configured = false;
 
-  static const entitlementId = 'pro';
+  static const entitlementId = 'studypilot_pro';
 
   RevenueCatService({this.apiKey});
 
@@ -34,6 +35,7 @@ class RevenueCatService {
     if (apiKey == null || apiKey!.trim().isEmpty) return;
     if (!_platformSupported) return;
     try {
+      if (kDebugMode) await Purchases.setLogLevel(LogLevel.debug);
       await Purchases.configure(PurchasesConfiguration(apiKey!.trim()));
       configured = true;
     } catch (_) {
@@ -62,16 +64,26 @@ class RevenueCatService {
       final result = await Purchases.purchase(
         PurchaseParams.package(package),
       );
-      return PurchaseOutcome(success: hasProAccess(result.customerInfo));
+      final active = result.customerInfo.entitlements.active.keys.toList();
+      debugPrint('RC purchase returned; active entitlements: $active');
+      return PurchaseOutcome(
+        success: hasProAccess(result.customerInfo),
+        message: hasProAccess(result.customerInfo)
+            ? null
+            : 'Purchase completed but the "$entitlementId" entitlement is '
+                'not active. Active: ${active.isEmpty ? 'none' : active.join(', ')}',
+      );
     } on PlatformException catch (e) {
       final cancelled = e.code == 'purchaseCancelledError' ||
           (e.details?['readableErrorCode'] ?? '') == 'PURCHASE_CANCELLED_ERROR';
+      debugPrint('RC purchase failed: ${e.code} | ${e.message} | ${e.details}');
       return PurchaseOutcome(
         success: false,
         cancelled: cancelled,
-        message: e.message,
+        message: '${e.code}: ${e.message ?? e.details ?? 'unknown error'}',
       );
     } catch (e) {
+      debugPrint('RC purchase threw: $e');
       return PurchaseOutcome(success: false, message: e.toString());
     }
   }

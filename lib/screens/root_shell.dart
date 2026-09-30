@@ -144,17 +144,31 @@ class TodayPage extends ConsumerWidget {
                   Padding(
                     padding: const EdgeInsets.all(24),
                     child: Text(
-                      'Nothing scheduled today. Use the adapt button to '
-                      'rebuild your plan.',
+                      app.subjects.isEmpty
+                          ? 'Add your subjects and exam dates to build a plan.'
+                          : 'Nothing scheduled today. Use the adapt button to '
+                                'rebuild your plan.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                if (app.subjects.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: FilledButton.icon(
+                      onPressed: () =>
+                          Navigator.of(context).pushNamed('/onboarding'),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add subjects'),
                     ),
                   ),
                 const SubjectsSection(),
                 const SizedBox(height: 80),
               ],
             ),
-      floatingActionButton: app.state.onboarded && !app.hasAnyPlan
+      floatingActionButton: app.state.onboarded &&
+              !app.hasAnyPlan &&
+              app.subjects.isNotEmpty
           ? FloatingActionButton.extended(
               onPressed: () => regeneratePlan(context, ref),
               icon: const Icon(Icons.auto_awesome),
@@ -167,6 +181,10 @@ class TodayPage extends ConsumerWidget {
 
 Future<void> regeneratePlan(BuildContext context, WidgetRef ref) async {
   final app = ref.read(appControllerProvider);
+  if (app.subjects.isEmpty) {
+    await Navigator.of(context).pushNamed('/onboarding');
+    return;
+  }
   final result = await app.generatePlan();
   if (!context.mounted) return;
   if (result.limitReached) {
